@@ -1,6 +1,10 @@
 <?php
 namespace Elgentos\ServerSideAnalytics\Model;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\State;
+use Magento\Framework\DataObject;
+use Psr\Log\LoggerInterface;
 use TheIconic\Tracking\GoogleAnalytics\Analytics;
 
 class GAClient
@@ -23,35 +27,38 @@ class GAClient
 
     /* Count how many products are added to the Analytics object */
     protected $productCounter = 0;
+
     /**
-     * @var \Magento\Framework\App\State
+     * @var State
      */
     private $state;
+
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
     private $scopeConfig;
+
     /**
-     * @var \Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     private $logger;
 
     /**
      * Elgentos_ServerSideAnalytics_Model_GAClient constructor.
-     * @param \Magento\Framework\App\State $state
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param State $state
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
-        \Magento\Framework\App\State $state,
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Psr\Log\LoggerInterface $logger
+        State $state,
+        ScopeConfigInterface $scopeConfig,
+        LoggerInterface $logger
     ) {
         $this->state = $state;
         $this->scopeConfig = $scopeConfig;
 
         $this->analytics = new Analytics(true);
 
-        if ($this->state->getMode() === \Magento\Framework\App\State::MODE_DEVELOPER
+        if ($this->state->getMode() === State::MODE_DEVELOPER
             || $this->scopeConfig->isSetFlag(self::GOOGLE_ANALYTICS_SERVERSIDE_DEBUG_MODE)
         ) {
             // $this->analytics = new Analytics(true, true);
@@ -62,10 +69,10 @@ class GAClient
     }
 
     /**
-     * @param \Magento\Framework\DataObject $data
+     * @param DataObject $data
      * @throws \Exception
      */
-    public function setTrackingData(\Magento\Framework\DataObject $data)
+    public function setTrackingData(DataObject $data)
     {
         if (!$data->getTrackingId()) {
             throw new \Exception('No tracking ID set for GA client.');
@@ -142,15 +149,24 @@ class GAClient
         }
 
         if (!$this->analytics->getClientId() && !$this->analytics->getUserId()) {
-            throw new \Exception(__('No client ID or user ID set for transaction %s', $this->analytics->getTransactionId()));
+            throw new \Exception(__(
+                'No client ID or user ID set for transaction %s',
+                $this->analytics->getTransactionId()
+            ));
         }
 
         if (!$this->analytics->getTrackingId()) {
-            throw new \Exception(__('No tracking ID set for transaction %s', $this->analytics->getTransactionId()));
+            throw new \Exception(__(
+                'No tracking ID set for transaction %s',
+                $this->analytics->getTransactionId()
+            ));
         }
 
         if (!$this->productCounter) {
-            throw new \Exception(__('No products have been added to transaction %s', $this->analytics->getTransactionId()));
+            throw new \Exception(__(
+                'No products have been added to transaction %s',
+                $this->analytics->getTransactionId()
+            ));
         }
 
         $this->analytics->setProductActionToPurchase();
@@ -160,11 +176,13 @@ class GAClient
             ->sendEvent();
 
         // @codingStandardsIgnoreStart
-        if ($this->state->getMode() === \Magento\Framework\App\State::MODE_DEVELOPER || $this->scopeConfig->isSetFlag(self::GOOGLE_ANALYTICS_SERVERSIDE_DEBUG_MODE)) {
-            $this->logger->info('elgentos_serversideanalytics_debug_response: ', array($response->getDebugResponse()));
+        if ($this->state->getMode() === State::MODE_DEVELOPER
+            || $this->scopeConfig->isSetFlag(self::GOOGLE_ANALYTICS_SERVERSIDE_DEBUG_MODE)
+        ) {
+            $this->logger->info('elgentos_serversideanalytics_debug_response: ', [$response->getDebugResponse()]);
         }
         if ($this->scopeConfig->isSetFlag(self::GOOGLE_ANALYTICS_SERVERSIDE_ENABLE_LOGGING)) {
-            $this->logger->info('elgentos_serversideanalytics_requests: ', array($response->getRequestUrl()));
+            $this->logger->info('elgentos_serversideanalytics_requests: ', [$response->getRequestUrl()]);
         }
         // @codingStandardsIgnoreEnd
     }

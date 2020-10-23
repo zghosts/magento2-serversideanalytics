@@ -3,24 +3,27 @@
 namespace Elgentos\ServerSideAnalytics\Observer;
 
 use Elgentos\ServerSideAnalytics\Model\GAClient;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Store\Model\ScopeInterface;
+use Psr\Log\LoggerInterface;
 
 class SaveGaUserId implements ObserverInterface
 {
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
     private $scopeConfig;
 
     /**
-     * @var \Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     private $logger;
 
     /**
-     * @var \Magento\Framework\Stdlib\CookieManagerInterface
+     * @var CookieManagerInterface
      */
     private $cookieManager;
 
@@ -31,15 +34,15 @@ class SaveGaUserId implements ObserverInterface
 
     /**
      * SaveGaUserId constructor.
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Psr\Log\LoggerInterface $logger
-     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
+     * @param ScopeConfigInterface $scopeConfig
+     * @param LoggerInterface $logger
+     * @param CookieManagerInterface $cookieManager
      * @param GAClient $gaclient
      */
     public function __construct(
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Psr\Log\LoggerInterface $logger,
-        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+        ScopeConfigInterface $scopeConfig,
+        LoggerInterface $logger,
+        CookieManagerInterface $cookieManager,
         GAClient $gaclient
     ) {
         $this->scopeConfig = $scopeConfig;
@@ -51,16 +54,22 @@ class SaveGaUserId implements ObserverInterface
     /**
      * When Order object is saved add the GA User Id if available in the cookies.
      *
-     * @param \Magento\Framework\Event\Observer $observer
+     * @param Observer $observer
      */
 
     public function execute(Observer $observer)
     {
-        if (!$this->scopeConfig->getValue(GAClient::GOOGLE_ANALYTICS_SERVERSIDE_ENABLED, ScopeInterface::SCOPE_STORE)) {
+        if (!$this->scopeConfig->getValue(
+            GAClient::GOOGLE_ANALYTICS_SERVERSIDE_ENABLED,
+            ScopeInterface::SCOPE_STORE
+        )) {
             return;
         }
 
-        if (!$this->scopeConfig->getValue(GAClient::GOOGLE_ANALYTICS_SERVERSIDE_UA, ScopeInterface::SCOPE_STORE)) {
+        if (!$this->scopeConfig->getValue(
+            GAClient::GOOGLE_ANALYTICS_SERVERSIDE_UA,
+            ScopeInterface::SCOPE_STORE
+        )) {
             $this->logger->info('No Google Analytics account number has been found in the ServerSideAnalytics configuration.');
             return;
         }

@@ -3,34 +3,40 @@
 namespace Elgentos\ServerSideAnalytics\Observer;
 
 use Elgentos\ServerSideAnalytics\Model\GAClient;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\DataObject;
+use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Sales\Model\Order;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Tax\Model\Config;
+use Psr\Log\LoggerInterface;
 
 class SendPurchaseEvent implements ObserverInterface
 {
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
     private $scopeConfig;
     /**
-     * @var \Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     private $logger;
     /**
-     * @var \Elgentos\ServerSideAnalytics\Model\GAClient
+     * @var GAClient
      */
     private $gaclient;
     /**
-     * @var \Magento\Framework\Event\ManagerInterface
+     * @var ManagerInterface
      */
     private $event;
 
     public function __construct(
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Psr\Log\LoggerInterface $logger,
-        \Elgentos\ServerSideAnalytics\Model\GAClient $gaclient,
-        \Magento\Framework\Event\ManagerInterface $event
+        ScopeConfigInterface $scopeConfig,
+        LoggerInterface $logger,
+        GAClient $gaclient,
+        ManagerInterface $event
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->logger = $logger;
@@ -52,18 +58,18 @@ class SendPurchaseEvent implements ObserverInterface
             return;
         }
 
-        /** @var \Magento\Sales\Model\Order\Payment $payment */
+        /** @var Order\Payment $payment */
         $payment = $observer->getPayment();
-        /** @var \Magento\Sales\Model\Order\Invoice $invoice */
+        /** @var Order\Invoice $invoice */
         $invoice = $observer->getInvoice();
-        /** @var \Magento\Sales\Model\Order $order */
+        /** @var Order $order */
         $order = $payment->getOrder();
 
         if (!$order->getData('ga_user_id')) {
             return;
         }
 
-        /** @var \Elgentos\ServerSideAnalytics\Model\GAClient $client */
+        /** @var GAClient $client */
         $client = $this->gaclient;
 
         $uas = explode(',', $ua);
@@ -71,10 +77,10 @@ class SendPurchaseEvent implements ObserverInterface
         $uas = array_map('trim', $uas);
 
         $products = [];
-        /** @var \Magento\Sales\Model\Order\Invoice\Item $item */
+        /** @var Order\Invoice\Item $item */
         foreach ($invoice->getAllItems() as $item) {
             if (!$item->isDeleted() && !$item->getOrderItem()->getParentItemId()) {
-                $product = new \Magento\Framework\DataObject([
+                $product = new DataObject([
                     'sku' => $item->getSku(),
                     'name' => $item->getName(),
                     'price' => $this->getPaidProductPrice($item->getOrderItem()),
@@ -89,14 +95,14 @@ class SendPurchaseEvent implements ObserverInterface
             }
         }
 
-        $trackingDataObject = new \Magento\Framework\DataObject([
+        $trackingDataObject = new DataObject([
             'client_id' => $order->getData('ga_user_id'),
             'ip_override' => $order->getRemoteIp(),
             'document_path' => '/checkout/onepage/success/'
         ]);
 
         $client->setTransactionData(
-            new \Magento\Framework\DataObject(
+            new DataObject(
                 [
                     'transaction_id' => $order->getIncrementId(),
                     'affiliation' => $order->getStoreName(),
@@ -128,26 +134,30 @@ class SendPurchaseEvent implements ObserverInterface
     /**
      * Get the actual price the customer also saw in it's cart.
      *
-     * @param \Magento\Sales\Model\Order\Item $orderItem
+     * @param Order\Item $orderItem
      *
      * @return float
      */
-    private function getPaidProductPrice(\Magento\Sales\Model\Order\Item $orderItem)
+    private function getPaidProductPrice(Order\Item $orderItem)
     {
-        return $this->scopeConfig->getValue('tax/display/type') == \Magento\Tax\Model\Config::DISPLAY_TYPE_EXCLUDING_TAX
-            ? $orderItem->getPrice()
-            : $orderItem->getPriceInclTax();
+        if ($this->scopeConfig->getValue('tax/display/type') == Config::DISPLAY_TYPE_EXCLUDING_TAX) {
+            return $orderItem->getPrice();
+        }
+
+        return $orderItem->getPriceInclTax();
     }
 
     /**
-     * @param \Magento\Sales\Model\Order\Invoice $invoice
+     * @param Order\Invoice $invoice
      *
      * @return float
      */
-    private function getPaidShippingCosts(\Magento\Sales\Model\Order\Invoice $invoice)
+    private function getPaidShippingCosts(Order\Invoice $invoice)
     {
-        return $this->scopeConfig->getValue('tax/display/type') == \Magento\Tax\Model\Config::DISPLAY_TYPE_EXCLUDING_TAX
-            ? $invoice->getShippingAmount()
-            : $invoice->getShippingInclTax();
+        if ($this->scopeConfig->getValue('tax/display/type') == Config::DISPLAY_TYPE_EXCLUDING_TAX) {
+            return $invoice->getShippingAmount();
+        }
+
+        return $invoice->getShippingInclTax();
     }
 }
