@@ -13,14 +13,17 @@ class SaveGaUserId implements ObserverInterface
      * @var \Magento\Framework\App\Config\ScopeConfigInterface
      */
     private $scopeConfig;
+
     /**
      * @var \Psr\Log\LoggerInterface
      */
     private $logger;
+
     /**
      * @var \Magento\Framework\Stdlib\CookieManagerInterface
      */
     private $cookieManager;
+
     /**
      * @var GAClient
      */
@@ -33,11 +36,12 @@ class SaveGaUserId implements ObserverInterface
      * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
      * @param GAClient $gaclient
      */
-    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-                                \Psr\Log\LoggerInterface $logger,
-                                \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
-                                GAClient $gaclient)
-    {
+    public function __construct(
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Psr\Log\LoggerInterface $logger,
+        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+        GAClient $gaclient
+    ) {
         $this->scopeConfig = $scopeConfig;
         $this->logger = $logger;
         $this->cookieManager = $cookieManager;
@@ -91,5 +95,4 @@ class SaveGaUserId implements ObserverInterface
 
         $order->setData('ga_user_id', $gaUserId);
     }
-
 }

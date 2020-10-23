@@ -3,15 +3,19 @@ namespace Elgentos\ServerSideAnalytics\Model;
 
 use TheIconic\Tracking\GoogleAnalytics\Analytics;
 
-class GAClient {
+class GAClient
+{
 
     const GOOGLE_ANALYTICS_SERVERSIDE_ENABLED        = 'google/serverside_analytics/enabled';
     const GOOGLE_ANALYTICS_SERVERSIDE_UA             = 'google/serverside_analytics/ua';
     const GOOGLE_ANALYTICS_SERVERSIDE_DEBUG_MODE     = 'google/serverside_analytics/debug_mode';
     const GOOGLE_ANALYTICS_SERVERSIDE_ENABLE_LOGGING = 'google/serverside_analytics/enable_logging';
 
-
-    /* Analytics object which holds transaction data */
+    /**
+     * Analytics object which holds transaction data
+     *
+     * @var Analytics analytics
+     */
     protected $analytics;
 
     /* Google Analytics Measurement Protocol API version */
@@ -37,19 +41,21 @@ class GAClient {
      * @param \Magento\Framework\App\State $state
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      */
-    public function __construct(\Magento\Framework\App\State $state,
-                                \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-                                \Psr\Log\LoggerInterface $logger
-    )
-    {
+    public function __construct(
+        \Magento\Framework\App\State $state,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Psr\Log\LoggerInterface $logger
+    ) {
         $this->state = $state;
         $this->scopeConfig = $scopeConfig;
 
-        /** @var Analytics analytics */
         $this->analytics = new Analytics(true);
 
-        if ($this->state->getMode() === \Magento\Framework\App\State::MODE_DEVELOPER || $this->scopeConfig->isSetFlag(self::GOOGLE_ANALYTICS_SERVERSIDE_DEBUG_MODE)) {
-            // $this->analytics = new Analytics(true, true); // for dev/staging envs where dev mode is off but we don't want to send events
+        if ($this->state->getMode() === \Magento\Framework\App\State::MODE_DEVELOPER
+            || $this->scopeConfig->isSetFlag(self::GOOGLE_ANALYTICS_SERVERSIDE_DEBUG_MODE)
+        ) {
+            // $this->analytics = new Analytics(true, true);
+            // for dev/staging envs where dev mode is off but we don't want to send events
             $this->analytics->setDebug(true);
         }
         $this->logger = $logger;
@@ -170,5 +176,4 @@ class GAClient {
     {
         return $this->version;
     }
-
 }

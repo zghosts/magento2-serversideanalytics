@@ -39,7 +39,7 @@ class SendPurchaseEvent implements ObserverInterface
     }
 
     /**
-     * @param $observer
+     * @param Observer $observer
      */
     public function execute(Observer $observer)
     {
@@ -51,7 +51,6 @@ class SendPurchaseEvent implements ObserverInterface
             $this->logger->info('No Google Analytics account number has been found in the ServerSideAnalytics configuration.');
             return;
         }
-
 
         /** @var \Magento\Sales\Model\Order\Payment $payment */
         $payment = $observer->getPayment();
@@ -82,8 +81,10 @@ class SendPurchaseEvent implements ObserverInterface
                     'quantity' => $item->getOrderItem()->getQtyOrdered(),
                     'position' => $item->getId()
                 ]);
-                $this->event->dispatch('elgentos_serversideanalytics_product_item_transport_object',
-                    ['product' => $product, 'item' => $item]);
+                $this->event->dispatch(
+                    'elgentos_serversideanalytics_product_item_transport_object',
+                    ['product' => $product, 'item' => $item]
+                );
                 $products[] = $product;
             }
         }
@@ -113,8 +114,10 @@ class SendPurchaseEvent implements ObserverInterface
             try {
                 $trackingDataObject->setData('tracking_id', $ua);
                 $client->setTrackingData($trackingDataObject);
-                $this->event->dispatch('elgentos_serversideanalytics_tracking_data_transport_object',
-                    ['tracking_data_object' => $trackingDataObject]);
+                $this->event->dispatch(
+                    'elgentos_serversideanalytics_tracking_data_transport_object',
+                    ['tracking_data_object' => $trackingDataObject]
+                );
                 $client->firePurchaseEvent();
             } catch (\Exception $e) {
                 $this->logger->info($e);
@@ -147,5 +150,4 @@ class SendPurchaseEvent implements ObserverInterface
             ? $invoice->getShippingAmount()
             : $invoice->getShippingInclTax();
     }
-
 }
